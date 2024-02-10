@@ -4,16 +4,16 @@ import jax
 import numpy as np
 
 def transform_cartesian_to_polar(x, y, omegatilde=0):
-    ''' Transform Cartesian coordinates to polar coordinates.
-    
+    """Transform Cartesian coordinates to polar coordinates.
+
     Args:
         x (jnp.array): The x-coordinate of the position.
         y (jnp.array): The y-coordinate of the position.
-        omegatilde (float, optional): The angle between the major axis of the lens and the x-axis.
-    
+        omegatilde (int, optional): The angle between the major axis of the lens and the x-axis. Defaults to 0.
+
     Returns:
         jnp.array: The radial and angular coordinates of the position.
-    '''
+    """
     r = jnp.sqrt(x**2 + y**2)
     phi = jnp.arctan2(y, x)-omegatilde
     return jnp.array([r, phi])
