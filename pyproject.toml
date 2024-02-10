@@ -1,0 +1,25 @@
+[build-system]
+requires=["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = [
+	"sieasymptotic/*.py",
+	"sieasymptotic/solver/*.py",
+]
+
+[project]
+name = "sieasymptotic"
+version = "0.0.1"
+authors = [ 
+	{ name = "Otto Akseli Hannuksela", email = "otto.akseli.hannuksela@gmail.com" },
+]
+description = "Asymptotic solver for the SIE lens based on https://academic.oup.com/mnras/article/442/1/428/1244014 . Uses Jax."
+requires-python = ">=3.9"
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: OS Independent",
+]
+
+
