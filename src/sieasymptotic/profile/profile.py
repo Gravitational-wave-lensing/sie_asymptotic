@@ -30,8 +30,8 @@ def psi_dimensionless_cartesian(image_x, image_y, f, omegatilde=0):
     Args:
         image_x (jnp.array): The x-coordinate of the image position.
         image_y (jnp.array): The y-coordinate of the image position.
-        f (float): The axis ratio of the lens.
-        omegatilde (float, optional): The angle between the major axis of the lens and the x-axis.
+        f (jnp.array): The axis ratio of the lens.
+        omegatilde (jnp.array, optional): The angle between the major axis of the lens and the x-axis.
         
     Returns:
         jnp.array: The dimensionless deflection potential.
@@ -48,8 +48,8 @@ def fermat_potential_dimensionless_polar(image_r, image_phi, source_r, source_ph
         image_phi (jnp.array): The angular coordinate of the image position.
         source_r (jnp.array): The radial coordinate of the source position.
         source_phi (jnp.array): The angular coordinate of the source position.
-        f (float): The axis ratio of the lens.
-        omegatilde (float, optional): The angle between the major axis of the lens and the x-axis.
+        f (jnp.array): The axis ratio of the lens.
+        omegatilde (jnp.array, optional): The angle between the major axis of the lens and the x-axis.
         
     Returns:
         jnp.array: The dimensionless Fermat potential.
@@ -70,8 +70,8 @@ def fermat_potential_dimensionless_cartesian(image_x, image_y, source_x, source_
         image_y (jnp.array): The y-coordinate of the image position.
         source_x (jnp.array): The x-coordinate of the source position.
         source_y (jnp.array): The y-coordinate of the source position.
-        f (float): The axis ratio of the lens.
-        omegatilde (float, optional): The angle between the major axis of the lens and the x-axis.
+        f (jnp.array): The axis ratio of the lens.
+        omegatilde (jnp.array, optional): The angle between the major axis of the lens and the x-axis.
         
     Returns:
         jnp.array: The dimensionless Fermat potential.
@@ -87,8 +87,8 @@ def magnification_sie_polar(image_r, image_phi, f, omegatilde=0):
     Parameters:
     image_r (jnp.array): The radial coordinate of the point.
     image_phi (jnp.array): The angular coordinate of the point.
-    f (float): Axis ratio of lens
-    omegatilde (float, optional): The external shear parameter. Defaults to 0.
+    f (jnp.array): Axis ratio of lens
+    omegatilde (jnp.array, optional): The external shear parameter. Defaults to 0.
 
     Returns:
     jnp.array: The magnification at the given point.
@@ -106,11 +106,11 @@ def magnification_sie_cartesian(image_x, image_y, f, omegatilde=0):
     Parameters:
     image_x (jnp.array): The x-coordinate of the image point.
     image_y (jnp.array): The y-coordinate of the image point.
-    f (float): The focal length of the lens.
-    omegatilde (float, optional): The external shear parameter. Defaults to 0.
+    f (jnp.array): The focal length of the lens.
+    omegatilde (jnp.array, optional): The external shear parameter. Defaults to 0.
 
     Returns:
-    float: The magnification at the given image point.
+    jnp.array: The magnification at the given image point.
     """
     image_polar = transform_cartesian_to_polar(image_x, image_y, omegatilde)
     image_r = image_polar[0]
