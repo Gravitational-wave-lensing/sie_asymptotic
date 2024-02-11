@@ -93,6 +93,7 @@ def magnification_sie_polar(image_r, image_phi, f, omegatilde=0):
     Returns:
     jnp.array: The magnification at the given point.
     '''
+    f, omegatilde = convert_f_omegatilde(f,omegatilde,image_r.shape)
     rho = image_r*jnp.sqrt(jnp.cos(image_phi)**2+f**2*jnp.sin(image_phi)**2)
     kappa = jnp.sqrt(f)/(2*rho)
     mu = 1./(1.-2*kappa)
