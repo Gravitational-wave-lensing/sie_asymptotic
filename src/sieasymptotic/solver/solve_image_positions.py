@@ -2,7 +2,8 @@
 from jax import numpy as jnp
 import jax
 import numpy as np
-from sieasymptotic.geom.geometry import transform_cartesian_to_polar, transform_polar_to_cartesian
+from sieasymptotic.utils.geometry import transform_cartesian_to_polar, transform_polar_to_cartesian
+from sieasymptotic.utils.conversions import convert_f_omegatilde
 
 def solve_image_positions_polar(source_r, source_theta, f, omegatilde=0):
     ''' Solve the lens equation for the SIE lens, using the asymptotic expansion, in polar coordinates.
@@ -10,17 +11,23 @@ def solve_image_positions_polar(source_r, source_theta, f, omegatilde=0):
     Args:
         source_r (jnp.array): The radial coordinate of the source position.
         source_theta (jnp.array): The angular coordinate of the source position.
-        f (float): The axis ratio of the lens.
-        omegatilde (float, optional): The angle between the major axis of the lens and the x-axis.
+        f (jnp.array): The axis ratio of the lens.
+        omegatilde (jnp.array, optional): The angle between the major axis of the lens and the x-axis.
     
     Returns:
         jnp.array: The radial coordinate of the image positions.
     '''
+    f, omegatilde = convert_f_omegatilde(f, omegatilde, source_r.shape) # Ensure that f, omegatilde are jnp.arrays
     # There are 4 solutions. We expand to first order.
     # Asymptotic 0th order first image position:
     # (Eq. 6 of https://academic.oup.com/mnras/article/442/1/428/1244014)
-    k = jnp.arange(4)
-    image_phi_0 = k * jnp.pi/2-omegatilde
+    #k = jnp.arange(4)
+    image_phi_0 = jnp.array([
+        0 * jnp.pi/2-jnp.transpose(omegatilde),
+        1 * jnp.pi/2-jnp.transpose(omegatilde),
+        2 * jnp.pi/2-jnp.transpose(omegatilde),
+        3 * jnp.pi/2-jnp.transpose(omegatilde)
+    ])
     # (Eq. 9 and 10 of https://academic.oup.com/mnras/article/442/1/428/1244014)
     f_prime = jnp.sqrt(1-f**2)
     image_r_0 = jnp.array([
@@ -35,8 +42,8 @@ def solve_image_positions_polar(source_r, source_theta, f, omegatilde=0):
     image_delta_phi, image_delta_r = first_order_image_perturbation(source_r, source_theta, f, omegatilde, f_prime)
     
     # The image positions, to first order, are the sum of the first-order solution plus the perturbation
-    image_r = jnp.transpose(image_r_0 + jnp.transpose(image_delta_r))
-    image_phi = jnp.transpose(image_phi_0 + jnp.transpose(image_delta_phi))
+    image_r = image_r_0+image_delta_r #jnp.transpose(image_r_0 + jnp.transpose(image_delta_r))
+    image_phi = image_phi_0+image_delta_phi#jnp.transpose(image_phi_0 + jnp.transpose(image_delta_phi))
     return jnp.array([image_r, image_phi])
 
 def first_order_image_perturbation(source_r, source_theta, f, omegatilde, f_prime):
@@ -44,14 +51,14 @@ def first_order_image_perturbation(source_r, source_theta, f, omegatilde, f_prim
     Calculate the first-order image perturbation for a given set of parameters.
 
     Args:
-        source_r (float): The radial distance of the source.
-        source_theta (float): The angular position of the source.
-        f (float): The lensing potential.
-        omegatilde (float): The angular position of the perturbation.
-        f_prime (float): The derivative of the lensing potential.
+        source_r (jnp.array): The radial distance of the source.
+        source_theta (jnp.array): The angular position of the source.
+        f (jnp.array): The lensing potential.
+        omegatilde (jnp.array): The angular position of the perturbation.
+        f_prime (jnp.array): The derivative of the lensing potential.
 
     Returns:
-        numpy.ndarray: An array containing the first-order image perturbation.
+        jnp.array: An array containing the first-order image perturbation.
 
     """
     image_delta_phi = jnp.array([
@@ -74,8 +81,8 @@ def solve_image_positions_cartesian(source_x, source_y, f, omegatilde=0):
     Args:
         source_x (jnp.array): The x-coordinate of the source position.
         source_y (jnp.array): The y-coordinate of the source position.
-        f (float): The axis ratio of the lens.
-        omegatilde (float, optional): The angle between the major axis of the lens and the x-axis.
+        f (jnp.array): The axis ratio of the lens.
+        omegatilde (jnp.array, optional): The angle between the major axis of the lens and the x-axis.
     
     Returns:
         jnp.array: The x and y coordinates of the image positions.
@@ -100,8 +107,7 @@ if __name__ == "__main__":
     source_y = jnp.array([0.03, 0.035])  # example source y-coordinates
     f = 0.5  # example axis ratio
     omegatilde = 0  # example angle between major axis and x-axis
-    solve_image_positions_cartesian_jax = jax.jit(solve_image_positions_cartesian)
-    image_positions = solve_image_positions_cartesian_jax(source_x, source_y, f, omegatilde)
+    image_positions = solve_image_positions_cartesian(source_x, source_y, f, omegatilde)
     
     def print_images(image_positions):
         image_x = image_positions[0]
@@ -117,5 +123,5 @@ if __name__ == "__main__":
     print_images(image_positions)
     
     # Now try to solve the image positions not as arrays
-    image_positions = solve_image_positions_cartesian_jax(source_x[0], source_y[0], f, omegatilde)
+    image_positions = solve_image_positions_cartesian(source_x[0], source_y[0], 0.5, 0)
     print_images(image_positions)

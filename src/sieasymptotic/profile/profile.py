@@ -1,6 +1,6 @@
 # Deflection potential, dimensionless fermat potential, magnification, and time delay for the SIE lens
 from jax import numpy as jnp
-from sieasymptotic.geom.geometry import transform_cartesian_to_polar, transform_polar_to_cartesian
+from sieasymptotic.utils.geometry import transform_cartesian_to_polar, transform_polar_to_cartesian
 from sieasymptotic.solver.solve_image_positions import solve_image_positions_cartesian, solve_image_positions_polar
 
 def psi_dimensionless_polar(image_r, image_phi, f, omegatilde=0):
