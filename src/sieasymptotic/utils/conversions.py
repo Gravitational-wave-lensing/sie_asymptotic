@@ -11,7 +11,7 @@ def convert_type_to_jnp_array(x, shape):
     Returns:
     jnp.array: The jnp array
     """
-    if isinstance(x, jnp.array) == False:
+    if type(x) != jnp.array:
         x = x*jnp.ones(shape)
     return x
 
