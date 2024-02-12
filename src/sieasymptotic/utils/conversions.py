@@ -30,5 +30,18 @@ def sort_images_by_arrival_time(image_positions, fermat_potential):
     Returns:
     jnp.array: The sorted image positions.
     """
-    sorted_indices = jnp.argsort(fermat_potential)
-    return image_positions[sorted_indices], fermat_potential[sorted_indices]
+    if len(fermat_potential.shape) == 2:
+        sorted_indices = jnp.argsort(fermat_potential, axis=0)
+        fermat_potential_sorted = fermat_potential[sorted_indices,jnp.arange(fermat_potential.shape[1])]
+        image_positions_0_sorted = image_positions[0][sorted_indices,jnp.arange(fermat_potential.shape[1])]
+        image_positions_1_sorted = image_positions[1][sorted_indices,jnp.arange(fermat_potential.shape[1])]
+    elif len(fermat_potential.shape) <= 1:
+        sorted_indices = jnp.argsort(fermat_potential)
+        fermat_potential_sorted = fermat_potential[sorted_indices]
+        image_positions_0_sorted = image_positions[0][sorted_indices]
+        image_positions_1_sorted = image_positions[1][sorted_indices]
+    else:
+        raise ValueError("Something went horribly wrong")
+    image_positions_sorted = jnp.array([image_positions_0_sorted, image_positions_1_sorted])
+    return image_positions_sorted, fermat_potential_sorted
+

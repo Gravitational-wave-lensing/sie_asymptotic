@@ -149,14 +149,21 @@ if __name__ == "__main__":
     omegatilde = 0  # example angle between major axis and x-axis
     source_r, source_phi = utils.transform_cartesian_to_polar(source_x, source_y, omegatilde)
     image_positions = solver.solve_image_positions_polar(source_r, source_phi, f, omegatilde)
+    print("Image positions, polar coordinates:", image_positions[0])
+    image_r, image_phi = image_positions
 
     # Calculate the dimensionless Fermat potential in polar coordinates
     fermat_polar = fermat_potential_dimensionless_polar(image_positions[0], image_positions[1], source_r, source_phi, f, omegatilde)
     print("Dimensionless Fermat potential in polar coordinates:", fermat_polar)
+    
     # Sort the image positions by arrival time
     image_positions, fermat_polar = utils.sort_images_by_arrival_time(image_positions, fermat_polar)
+    print("Sorted:")
+    print("Image positions, polar coordinates:", image_positions[0])
+    print("Dimensionless Fermat potential in polar coordinates:", fermat_polar)
     image_r, image_phi = image_positions
 
+    
     # Calculate the magnification in polar coordinates
     magnification_polar = magnification_sie_polar(image_r, image_phi, f, omegatilde)
     print("Magnification in polar coordinates:", magnification_polar)
