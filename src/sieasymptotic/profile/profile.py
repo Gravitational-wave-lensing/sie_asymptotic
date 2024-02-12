@@ -1,8 +1,7 @@
 # Deflection potential, dimensionless fermat potential, magnification, and time delay for the SIE lens
 from jax import numpy as jnp
-from sieasymptotic.utils.geometry import transform_cartesian_to_polar, transform_polar_to_cartesian
-from sieasymptotic.solver.solve_image_positions import solve_image_positions_cartesian, solve_image_positions_polar
-from sieasymptotic.utils.conversions import convert_f_omegatilde
+import sieasymptotic.utils as utils
+import sieasymptotic.solver as solver
 
 def psi_dimensionless_polar(image_r, image_phi, f, omegatilde=0):
     ''' Calculate the dimensionless deflection potential for the SIE lens in polar coordinates.
@@ -16,7 +15,7 @@ def psi_dimensionless_polar(image_r, image_phi, f, omegatilde=0):
     Returns:
         jnp.array: The dimensionless deflection potential.
     '''
-    f, omegatilde = convert_f_omegatilde(f, omegatilde, image_r.shape)
+    f, omegatilde = utils.convert_f_omegatilde(f, omegatilde, image_r.shape)
     r = image_r
     phi_tilde = image_phi - omegatilde
     f_prime = jnp.sqrt(1-f**2)
@@ -36,7 +35,7 @@ def psi_dimensionless_cartesian(image_x, image_y, f, omegatilde=0):
     Returns:
         jnp.array: The dimensionless deflection potential.
     '''
-    image_polar = transform_cartesian_to_polar(image_x, image_y, omegatilde)
+    image_polar = utils.transform_cartesian_to_polar(image_x, image_y, omegatilde)
     psi = psi_dimensionless_polar(image_polar[0], image_polar[1], f, omegatilde)
     return psi
 
@@ -76,8 +75,8 @@ def fermat_potential_dimensionless_cartesian(image_x, image_y, source_x, source_
     Returns:
         jnp.array: The dimensionless Fermat potential.
     '''
-    image_polar = transform_cartesian_to_polar(image_x, image_y, omegatilde)
-    source_polar = transform_cartesian_to_polar(source_x, source_y, omegatilde)
+    image_polar = utils.transform_cartesian_to_polar(image_x, image_y, omegatilde)
+    source_polar = utils.transform_cartesian_to_polar(source_x, source_y, omegatilde)
     fermat = fermat_potential_dimensionless_polar(image_polar[0], image_polar[1], source_polar[0], source_polar[1], f, omegatilde)
     return fermat
 
@@ -93,7 +92,7 @@ def magnification_sie_polar(image_r, image_phi, f, omegatilde=0):
     Returns:
     jnp.array: The magnification at the given point.
     '''
-    f, omegatilde = convert_f_omegatilde(f,omegatilde,image_r.shape)
+    f, omegatilde = utils.convert_f_omegatilde(f,omegatilde,image_r.shape)
     rho = image_r*jnp.sqrt(jnp.cos(image_phi)**2+f**2*jnp.sin(image_phi)**2)
     kappa = jnp.sqrt(f)/(2*rho)
     mu = 1./(1.-2*kappa)
@@ -112,7 +111,7 @@ def magnification_sie_cartesian(image_x, image_y, f, omegatilde=0):
     Returns:
     jnp.array: The magnification at the given image point.
     """
-    image_polar = transform_cartesian_to_polar(image_x, image_y, omegatilde)
+    image_polar = utils.transform_cartesian_to_polar(image_x, image_y, omegatilde)
     image_r = image_polar[0]
     image_phi = image_polar[1]
     mu = magnification_sie_polar(image_r, image_phi, f, omegatilde)
@@ -148,12 +147,15 @@ if __name__ == "__main__":
     source_y = jnp.array([0.03, 0.035])  # example source y-coordinates
     f = 0.5  # example axis ratio
     omegatilde = 0  # example angle between major axis and x-axis
-    source_r, source_phi = transform_cartesian_to_polar(source_x, source_y, omegatilde)
-    image_r, image_phi = solve_image_positions_polar(source_r, source_phi, f, omegatilde)
+    source_r, source_phi = utils.transform_cartesian_to_polar(source_x, source_y, omegatilde)
+    image_positions = solver.solve_image_positions_polar(source_r, source_phi, f, omegatilde)
 
     # Calculate the dimensionless Fermat potential in polar coordinates
-    fermat_polar = fermat_potential_dimensionless_polar(image_r, image_phi, source_r, source_phi, f, omegatilde)
+    fermat_polar = fermat_potential_dimensionless_polar(image_positions[0], image_positions[1], source_r, source_phi, f, omegatilde)
     print("Dimensionless Fermat potential in polar coordinates:", fermat_polar)
+    # Sort the image positions by arrival time
+    image_positions, fermat_polar = utils.sort_images_by_arrival_time(image_positions, fermat_polar)
+    image_r, image_phi = image_positions
 
     # Calculate the magnification in polar coordinates
     magnification_polar = magnification_sie_polar(image_r, image_phi, f, omegatilde)
