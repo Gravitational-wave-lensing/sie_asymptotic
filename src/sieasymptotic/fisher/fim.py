@@ -31,7 +31,7 @@ def chi_squared(log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_m
     chi_squared = jnp.sum((log_dL_effectives - log_dL_effectives_median)**2/log_sigma_dL_effectives**2) + jnp.sum((log_time_delays - log_time_delays_median)**2/log_sigma_time_delays**2)
     return chi_squared
 
-def fisher_information_matrix( log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_median, log_time_delays_median, log_sigma_dL_effectives=jnp.ones(4)*0.1, log_sigma_time_delays=jnp.ones(3)*0.03, omegatilde=0):
+def fisher_information_matrix( log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_median, log_time_delays_median, log_sigma_dL_effectives=jnp.ones(4)*0.01, log_sigma_time_delays=jnp.ones(3)*0.01, omegatilde=0):
     """Computes the fisher information matrix for the SIE lens moel with asymptotic expansion using jax
 
     Args:
@@ -101,4 +101,14 @@ if __name__ == "__main__":
     print("Fisher information matrix:", fisher)
     print("Inverse Fisher information matrix:", fisher_inv)
     print("Diagonal values:", jnp.diag(fisher_inv))
-    
+    # Plot out the posterior distribution
+    from scipy.stats import multivariate_normal
+    import numpy as np
+    from corner import corner
+    import pylab as plt
+    mean = np.array([log_T_star, log_dL, f, source_r, source_phi])
+    cov = fisher_inv
+    labels = [r"\log T_* [s]", r"\log d_L [Mpc]", r"f", r"r", r"$\phi [rad]"]
+    samples = multivariate_normal.rvs(mean, cov, size=10000)
+    corner(samples, labels=labels, truths=mean)
+    plt.show()
