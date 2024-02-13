@@ -19,16 +19,16 @@ def solve_image_positions_polar(source_r, source_phi, f, omegatilde=0, sort_time
     Returns:
         jnp.array: The radial coordinate of the image positions.
     '''
-    f, omegatilde = utils.convert_f_omegatilde(f, omegatilde, source_r.shape) # Ensure that f, omegatilde are jnp.arrays
+    # f, omegatilde = utils.convert_f_omegatilde(f, omegatilde, source_r.shape) # Ensure that f, omegatilde are jnp.arrays
     # There are 4 solutions. We expand to first order.
     # Asymptotic 0th order first image position:
     # (Eq. 6 of https://academic.oup.com/mnras/article/442/1/428/1244014)
     #k = jnp.arange(4)
     image_phi_0 = jnp.array([
-        0. * jnp.pi/2-jnp.transpose(omegatilde),
-        1. * jnp.pi/2-jnp.transpose(omegatilde),
-        2. * jnp.pi/2-jnp.transpose(omegatilde),
-        3. * jnp.pi/2-jnp.transpose(omegatilde)
+        0. * jnp.pi/2-omegatilde,
+        1. * jnp.pi/2-omegatilde,
+        2. * jnp.pi/2-omegatilde,
+        3. * jnp.pi/2-omegatilde
     ])
     # (Eq. 9 and 10 of https://academic.oup.com/mnras/article/442/1/428/1244014)
     f_prime = jnp.sqrt(1-f**2)
@@ -134,7 +134,7 @@ def solve_effective_luminosity_distances_and_time_delays(log_T_star, log_dL, f, 
     # The effective luminosity distances are the luminosity distances divided by the square root of the absolute value of the magnification
     log_effective_luminosity_distances = log_dL - 0.5*jnp.log(jnp.abs(magnification_polar)) # effective_luminosity_distances = jnp.exp(log_dL)/jnp.sqrt(jnp.abs(magnification_polar))
     # Time delays are the differences in arrival times
-    log_time_delays = log_T_star + jnp.log(fermat_polar - fermat_polar[0])[1:] # time_delays = jnp.exp(log_T_star)*(fermat_polar - fermat_polar[0])
+    log_time_delays = log_T_star+jnp.log((fermat_polar - fermat_polar[0])[1:]) # time_delays = jnp.exp(log_T_star)*(fermat_polar - fermat_polar[0])
     # Solve the effective luminosity distances and time delays
     return log_effective_luminosity_distances, log_time_delays
 

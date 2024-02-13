@@ -28,7 +28,6 @@ def chi_squared(log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_m
         jnp.array: The calculated chi-squared value.
     """
     log_dL_effectives, log_time_delays = solver.solve_effective_luminosity_distances_and_time_delays(log_T_star, log_dL, f, source_r, source_phi, omegatilde)
-    print("params", log_dL_effectives, log_time_delays)
     chi_squared = jnp.sum((log_dL_effectives - log_dL_effectives_median)**2/log_sigma_dL_effectives**2) + jnp.sum((log_time_delays - log_time_delays_median)**2/log_sigma_time_delays**2)
     return chi_squared
 
@@ -52,11 +51,10 @@ def fisher_information_matrix( log_T_star, log_dL, f, source_r, source_phi, log_
     """
     # The fisher information matrix is the hessian of the chi_squared distribution with respect to T_star, dL, f, source_r, source_phi
     chi_squared_hessian =  hessian(lambda x: chi_squared(x[0], x[1], x[2], x[3], x[4], log_dL_effectives_median, log_time_delays_median, log_sigma_dL_effectives, log_sigma_time_delays, omegatilde )/2.)
-    grad_chi_sq = grad(lambda x: chi_squared(x[0], x[1], x[2], x[3], x[4], log_dL_effectives_median, log_time_delays_median, log_sigma_dL_effectives, log_sigma_time_delays, omegatilde ))
     x = jnp.array([log_T_star, log_dL, f, source_r, source_phi])
     fisher_information = chi_squared_hessian(x)
     #print("fisher", fisher_information)
-    print("grad", grad_chi_sq(x))
+    # print("grad", grad_chi_sq(x))
     return fisher_information
 
 # If running as main, test the fisher information matrix
@@ -92,15 +90,15 @@ if __name__ == "__main__":
     # Compute the chi_squared value
     chi_sq = chi_squared(log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives, log_time_delays)
     print("chisq", chi_sq)
-    print(grad(jax.jit(lambda x: chi_squared(x, log_dL, f, source_r, source_phi, log_dL_effectives, log_time_delays)))(log_T_star))
-    # # Set the median value to be the true value for now
-    # log_dL_effectives_median = log_dL_effectives
-    # log_time_delays_median = log_time_delays
-    # fisher = fisher_information_matrix( log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_median, log_time_delays_median)
-    # # Compute the inverse of the fisher information matrix
-    # fisher_inv = jnp.linalg.inv(fisher)
-    # # Print out the diagonal values
-    # print("Fisher information matrix:", fisher)
-    # print("Inverse Fisher information matrix:", fisher_inv)
-    # print("Diagonal values:", jnp.diag(fisher_inv))
+    print(hessian(jax.jit(lambda x: chi_squared(log_T_star, log_dL, x, source_r, source_phi, log_dL_effectives, log_time_delays)))(f))
+    # Set the median value to be the true value for now
+    log_dL_effectives_median = log_dL_effectives
+    log_time_delays_median = log_time_delays
+    fisher = fisher_information_matrix( log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_median, log_time_delays_median)
+    # Compute the inverse of the fisher information matrix
+    fisher_inv = jnp.linalg.inv(fisher)
+    # Print out the diagonal values
+    print("Fisher information matrix:", fisher)
+    print("Inverse Fisher information matrix:", fisher_inv)
+    print("Diagonal values:", jnp.diag(fisher_inv))
     
