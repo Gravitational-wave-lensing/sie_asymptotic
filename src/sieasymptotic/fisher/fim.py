@@ -9,7 +9,7 @@ import sieasymptotic.utils as utils
 from jax import config
 config.update("jax_enable_x64", True)
 
-def chi_squared(log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_median, log_time_delays_median, log_sigma_dL_effectives=jnp.ones(4)*0.1, log_sigma_time_delays=jnp.ones(3)*0.03, omegatilde=0):
+def chi_squared(log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_median, log_time_delays_median, log_sigma_dL_effectives=jnp.ones(4)*1, log_sigma_time_delays=jnp.ones(3)*1, omegatilde=0):
     """Calculate the chi-squared value for a given set of parameters for the SIE lens model based on asymptotic expansion.
 
     Args:
@@ -29,10 +29,7 @@ def chi_squared(log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_m
     """
     log_dL_effectives, log_time_delays = solver.solve_effective_luminosity_distances_and_time_delays(log_T_star, log_dL, f, source_r, source_phi, omegatilde)
     print("params", log_dL_effectives, log_time_delays)
-    print("median", log_dL_effectives_median, log_time_delays_median)
-    chi_squared = 0
-    chi_squared += jnp.sum((log_dL_effectives - log_dL_effectives_median).T**2/log_sigma_dL_effectives**2)
-    chi_squared += jnp.sum((log_time_delays - log_time_delays_median).T**2/log_sigma_time_delays**2)
+    chi_squared = jnp.sum((log_dL_effectives - log_dL_effectives_median)**2/log_sigma_dL_effectives**2) + jnp.sum((log_time_delays - log_time_delays_median)**2/log_sigma_time_delays**2)
     return chi_squared
 
 def fisher_information_matrix( log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives_median, log_time_delays_median, log_sigma_dL_effectives=jnp.ones(4)*0.1, log_sigma_time_delays=jnp.ones(3)*0.03, omegatilde=0):
@@ -68,8 +65,8 @@ if __name__ == "__main__":
     from astropy import units
     source_x = jnp.array(0.01)  # example source x-coordinates
     source_y = jnp.array(0.03)  # example source y-coordinates
-    f = 0.5  # example axis ratio
-    omegatilde = 0  # example angle between major axis and x-axis
+    f = jnp.array(0.5)  # example axis ratio
+    omegatilde = jnp.array(0)  # example angle between major axis and x-axis
     source_r, source_phi = utils.transform_cartesian_to_polar(source_x, source_y, omegatilde)
     image_r, image_phi = solver.solve_image_positions_polar(source_r, source_phi, f, omegatilde)
     # Calculate the dimensionless Fermat potential in polar coordinates
@@ -95,6 +92,7 @@ if __name__ == "__main__":
     # Compute the chi_squared value
     chi_sq = chi_squared(log_T_star, log_dL, f, source_r, source_phi, log_dL_effectives, log_time_delays)
     print("chisq", chi_sq)
+    print(grad(jax.jit(lambda x: chi_squared(x, log_dL, f, source_r, source_phi, log_dL_effectives, log_time_delays)))(log_T_star))
     # # Set the median value to be the true value for now
     # log_dL_effectives_median = log_dL_effectives
     # log_time_delays_median = log_time_delays

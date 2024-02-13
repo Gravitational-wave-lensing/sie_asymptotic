@@ -6,7 +6,7 @@ import sieasymptotic.profile as profile
 import sieasymptotic.solver as solver
 import sieasymptotic.utils as utils
 
-def solve_image_positions_polar(source_r, source_phi, f, omegatilde=0, sort_time_delay=True):
+def solve_image_positions_polar(source_r, source_phi, f, omegatilde=0, sort_time_delay=False):
     ''' Solve the lens equation for the SIE lens, using the asymptotic expansion, in polar coordinates.
     
     Args:
@@ -25,10 +25,10 @@ def solve_image_positions_polar(source_r, source_phi, f, omegatilde=0, sort_time
     # (Eq. 6 of https://academic.oup.com/mnras/article/442/1/428/1244014)
     #k = jnp.arange(4)
     image_phi_0 = jnp.array([
-        0 * jnp.pi/2-jnp.transpose(omegatilde),
-        1 * jnp.pi/2-jnp.transpose(omegatilde),
-        2 * jnp.pi/2-jnp.transpose(omegatilde),
-        3 * jnp.pi/2-jnp.transpose(omegatilde)
+        0. * jnp.pi/2-jnp.transpose(omegatilde),
+        1. * jnp.pi/2-jnp.transpose(omegatilde),
+        2. * jnp.pi/2-jnp.transpose(omegatilde),
+        3. * jnp.pi/2-jnp.transpose(omegatilde)
     ])
     # (Eq. 9 and 10 of https://academic.oup.com/mnras/article/442/1/428/1244014)
     f_prime = jnp.sqrt(1-f**2)
@@ -47,10 +47,10 @@ def solve_image_positions_polar(source_r, source_phi, f, omegatilde=0, sort_time
     image_r = image_r_0+image_delta_r #jnp.transpose(image_r_0 + jnp.transpose(image_delta_r))
     image_phi = image_phi_0+image_delta_phi#jnp.transpose(image_phi_0 + jnp.transpose(image_delta_phi))
     image_positions = jnp.array([image_r, image_phi])
-    if sort_time_delay:
-        # Sort the time delays (fermat potential)
-        fermat_polar = profile.fermat_potential_dimensionless_polar(image_positions[0], image_positions[1], source_r, source_phi, f, omegatilde)
-        image_positions, fermat_polar = utils.sort_images_by_arrival_time(image_positions, fermat_polar)
+    # if sort_time_delay:
+    #     # Sort the time delays (fermat potential)
+    #     fermat_polar = profile.fermat_potential_dimensionless_polar(image_positions[0], image_positions[1], source_r, source_phi, f, omegatilde)
+    #     image_positions, fermat_polar = utils.sort_images_by_arrival_time(image_positions, fermat_polar)
     return image_positions
 
 def first_order_image_perturbation(source_r, source_phi, f, omegatilde, f_prime):
@@ -133,8 +133,6 @@ def solve_effective_luminosity_distances_and_time_delays(log_T_star, log_dL, f, 
     magnification_polar = profile.magnification_sie_polar(image_r, image_phi, f, omegatilde)
     # The effective luminosity distances are the luminosity distances divided by the square root of the absolute value of the magnification
     log_effective_luminosity_distances = log_dL - 0.5*jnp.log(jnp.abs(magnification_polar)) # effective_luminosity_distances = jnp.exp(log_dL)/jnp.sqrt(jnp.abs(magnification_polar))
-    # Time delay is the fermat potential multiplied by the time-delay factor
-    log_arrival_times = log_T_star + jnp.log(fermat_polar) # arrival_times = jnp.exp(log_T_star)*fermat_polar
     # Time delays are the differences in arrival times
     log_time_delays = log_T_star + jnp.log(fermat_polar - fermat_polar[0])[1:] # time_delays = jnp.exp(log_T_star)*(fermat_polar - fermat_polar[0])
     # Solve the effective luminosity distances and time delays
