@@ -6,14 +6,15 @@ import sieasymptotic.profile as profile
 import sieasymptotic.solver as solver
 import sieasymptotic.utils as utils
 
-def solve_image_positions_polar(source_r, source_theta, f, omegatilde=0):
+def solve_image_positions_polar(source_r, source_phi, f, omegatilde=0, sort_time_delay=True):
     ''' Solve the lens equation for the SIE lens, using the asymptotic expansion, in polar coordinates.
     
     Args:
         source_r (jnp.array): The radial coordinate of the source position.
-        source_theta (jnp.array): The angular coordinate of the source position.
+        source_phi (jnp.array): The angular coordinate of the source position.
         f (jnp.array): The axis ratio of the lens.
         omegatilde (jnp.array, optional): The angle between the major axis of the lens and the x-axis.
+        sort_time_delay (bool, optional): Whether to sort the image positions by arrival time. Defaults to True.
     
     Returns:
         jnp.array: The radial coordinate of the image positions.
@@ -40,20 +41,25 @@ def solve_image_positions_polar(source_r, source_theta, f, omegatilde=0):
     
     # Asymptotic 1st order perturbations to the image positions:
     # (Eq. 14 and 15 of https://academic.oup.com/mnras/article/442/1/428/1244014)
-    image_delta_phi, image_delta_r = first_order_image_perturbation(source_r, source_theta, f, omegatilde, f_prime)
+    image_delta_phi, image_delta_r = first_order_image_perturbation(source_r, source_phi, f, omegatilde, f_prime)
     
     # The image positions, to first order, are the sum of the first-order solution plus the perturbation
     image_r = image_r_0+image_delta_r #jnp.transpose(image_r_0 + jnp.transpose(image_delta_r))
     image_phi = image_phi_0+image_delta_phi#jnp.transpose(image_phi_0 + jnp.transpose(image_delta_phi))
-    return jnp.array([image_r, image_phi])
+    image_positions = jnp.array([image_r, image_phi])
+    if sort_time_delay:
+        # Sort the time delays (fermat potential)
+        fermat_polar = profile.fermat_potential_dimensionless_polar(image_positions[0], image_positions[1], source_r, source_phi, f, omegatilde)
+        image_positions, fermat_polar = utils.sort_images_by_arrival_time(image_positions, fermat_polar)
+    return image_positions
 
-def first_order_image_perturbation(source_r, source_theta, f, omegatilde, f_prime):
+def first_order_image_perturbation(source_r, source_phi, f, omegatilde, f_prime):
     """
     Calculate the first-order image perturbation for a given set of parameters.
 
     Args:
         source_r (jnp.array): The radial distance of the source.
-        source_theta (jnp.array): The angular position of the source.
+        source_phi (jnp.array): The angular position of the source.
         f (jnp.array): The lensing potential.
         omegatilde (jnp.array): The angular position of the perturbation.
         f_prime (jnp.array): The derivative of the lensing potential.
@@ -63,16 +69,16 @@ def first_order_image_perturbation(source_r, source_theta, f, omegatilde, f_prim
 
     """
     image_delta_phi = jnp.array([
-       source_r*jnp.sin(source_theta+omegatilde)/(jnp.sqrt(f)*(1./f_prime*jnp.arcsinh(f_prime/f)-1)),
-       source_r*jnp.cos(source_theta+omegatilde)/(jnp.sqrt(f)*(1./f-1./f_prime*jnp.arcsin(f_prime)) ),
-       -1*source_r*jnp.sin(source_theta+omegatilde)/(jnp.sqrt(f)*(1./f_prime*jnp.arcsinh(f_prime/f)-1)),
-       -1*source_r*jnp.cos(source_theta+omegatilde)/(jnp.sqrt(f)*(1./f-1./f_prime*jnp.arcsin(f_prime)) )
+       source_r*jnp.sin(source_phi+omegatilde)/(jnp.sqrt(f)*(1./f_prime*jnp.arcsinh(f_prime/f)-1)),
+       source_r*jnp.cos(source_phi+omegatilde)/(jnp.sqrt(f)*(1./f-1./f_prime*jnp.arcsin(f_prime)) ),
+       -1*source_r*jnp.sin(source_phi+omegatilde)/(jnp.sqrt(f)*(1./f_prime*jnp.arcsinh(f_prime/f)-1)),
+       -1*source_r*jnp.cos(source_phi+omegatilde)/(jnp.sqrt(f)*(1./f-1./f_prime*jnp.arcsin(f_prime)) )
     ])
     image_delta_r = jnp.array([
-        source_r*jnp.cos(source_theta+omegatilde),
-        source_r*jnp.cos(source_theta+omegatilde),
-        -1*source_r*jnp.cos(source_theta+omegatilde),
-        -1*source_r*jnp.cos(source_theta+omegatilde),
+        source_r*jnp.cos(source_phi+omegatilde),
+        source_r*jnp.cos(source_phi+omegatilde),
+        -1*source_r*jnp.cos(source_phi+omegatilde),
+        -1*source_r*jnp.cos(source_phi+omegatilde),
     ])
     return jnp.array([image_delta_phi,image_delta_r])
 
@@ -91,9 +97,9 @@ def solve_image_positions_cartesian(source_x, source_y, f, omegatilde=0):
     # Transform the source position to polar coordinates
     source_polar = utils.transform_cartesian_to_polar(source_x, source_y, omegatilde)
     source_r = source_polar[0]
-    source_theta = source_polar[1]
+    source_phi = source_polar[1]
     # Solve the lens equation in polar coordinates
-    images_polar = solve_image_positions_polar(source_r, source_theta, f, omegatilde)
+    images_polar = solve_image_positions_polar(source_r, source_phi, f, omegatilde)
     image_r = images_polar[0]
     image_phi = images_polar[1]
     # Transform the image positions back to Cartesian coordinates
@@ -130,7 +136,7 @@ def solve_effective_luminosity_distances_and_time_delays(log_T_star, log_dL, f, 
     # Time delay is the fermat potential multiplied by the time-delay factor
     log_arrival_times = log_T_star + jnp.log(fermat_polar) # arrival_times = jnp.exp(log_T_star)*fermat_polar
     # Time delays are the differences in arrival times
-    log_time_delays = log_T_star + jnp.log(fermat_polar - fermat_polar[0]) # time_delays = jnp.exp(log_T_star)*(fermat_polar - fermat_polar[0])
+    log_time_delays = log_T_star + jnp.log(fermat_polar - fermat_polar[0])[1:] # time_delays = jnp.exp(log_T_star)*(fermat_polar - fermat_polar[0])
     # Solve the effective luminosity distances and time delays
     return log_effective_luminosity_distances, log_time_delays
 
