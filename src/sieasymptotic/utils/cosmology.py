@@ -17,63 +17,152 @@ xvals_ = jnp.geomspace(xvalsmin_,xvalsmax_,100000)
 hyp2f1_fixed_vals = jnp.array([hyp2f1(1/3,1/2,4/3,-xvals_[i]) for i in range(len(xvals_))])
 
 def hyp2f1_fixed(x):
-    ''' Computes hyp2f1(1/3,1/2,4/3,-x) '''
+    ''' 
+    Computes hyp2f1(1/3,1/2,4/3,-x)
+    
+    Parameters:
+        x (jnp.array): The input value for the function.
+        
+    Returns:
+        jnp.array: The result of the hyp2f1 function.
+    '''
     return jnp.interp(x,xvals_,hyp2f1_fixed_vals)
 
 def integrate_fast(z, Om_m):
-    # z is a vector
+    """
+    Calculate the fast integration of a function with respect to redshift (z) and matter density (Om_m).
+
+    Parameters:
+    z (jnp.array): Redshift values.
+    Om_m (jnp.array): Matter density.
+
+    Returns:
+    jnp.array: The result of the integration.
+    """
     Om_L = 1 - Om_m
     integral = ( hyp2f1_fixed(((Om_m*(1 + z)**3)/Om_L)) *(1 + z)*jnp.sqrt(1 + (Om_m*(1 + z)**3)/Om_L))/jnp.sqrt(Om_L + Om_m*(1 + z)**3) \
-            - (hyp2f1_fixed(((Om_m*(1 + 0)**3)/Om_L))*(1 + 0)*jnp.sqrt(1 + (Om_m*(1 + 0)**3)/Om_L))/jnp.sqrt(Om_L + Om_m*(1 + 0)**3)
+        - (hyp2f1_fixed(((Om_m*(1 + 0)**3)/Om_L))*(1 + 0)*jnp.sqrt(1 + (Om_m*(1 + 0)**3)/Om_L))/jnp.sqrt(Om_L + Om_m*(1 + 0)**3)
     return integral
 
 def E(z, Om_m):
-    Om_L = 1-Om_m # Omega lambda
-    return jnp.sqrt(Om_m*(1+z)**3+Om_L)
+    """
+    Calculate the value of E(z) in the cosmological model.
 
-def integrate_slow(z,Om_m,n=10000):
-    # z is a vector
-    z0 = jnp.linspace(0,40,n)
+    Parameters:
+    z (jnp.array): The redshift value.
+    Om_m (jnp.array): The matter density parameter.
+
+    Returns:
+    jnp.array: The value of E(z) in the cosmological model.
+    """
+    Om_L = 1 - Om_m  # Omega lambda
+    return jnp.sqrt(Om_m * (1 + z) ** 3 + Om_L)
+
+def integrate_slow(z, Om_m, n=10000):
+    """
+    Calculate the integral of Einv from 0 to z for each value of z.
+
+    Parameters:
+    z (jnp.array): The values of z.
+    Om_m (jnp.arraylike): The values of Om_m.
+    n (int, optional): The number of points to use for integration. Default is 10000.
+
+    Returns:
+    jnp.array: The integral values for each value of z.
+    """
+    z0 = jnp.linspace(0, 40, n)
     dz = jnp.diff(z0)[0]
-    # integrate_slow Einv from 0 to z for every z
     integral = jnp.zeros(len(z))
     for i in range(len(z)):
         zi = z[i]
         Om_m_i = Om_m[i]
-        Einv=1./E(z0[z0<=zi],Om_m_i)
-        integral[i] = jnp.sum(Einv)*dz
+        Einv = 1. / E(z0[z0 <= zi], Om_m_i)
+        integral[i] = jnp.sum(Einv) * dz
     return integral
 
-
 def dC(z, H0, Om_m):
-    # H0 is in km/s/Mpc
+    """
+    Calculate the comoving distance at redshift z.
+
+    Parameters:
+    z (jnp.array): The redshift.
+    H0 (jnp.array): The Hubble constant in km/s/Mpc.
+    Om_m (jnp.array): The matter density parameter.
+
+    Returns:
+    jnp.array: The comoving distance in Mpc.
+    """
     c = 299792.458 # km/s
     dH = c/H0 # Mpc
     return dH*integrate_fast(z,Om_m) # Mpc
-
-
 
 def dC_fast(z, H0, Om_m):
-    # H0 is in km/s/Mpc
+    ''' 
+    Calculate the comoving distance using the fast integration method.
+
+    Parameters:
+    z (jnp.array): Redshift values.
+    H0 (jnp.array): Hubble constant values in km/s/Mpc.
+    Om_m (jnp.array): Matter density parameter values.
+
+    Returns:
+    jnp.array: Comoving distance values in Mpc.
+    '''
     c = 299792.458 # km/s
     dH = c/H0 # Mpc
     return dH*integrate_fast(z,Om_m) # Mpc
 
-
-
-
 def dM(z, H0, Om_m):
+    ''' Computes the comoving distance for a given redshift z, H0 and Om_m.
+    
+    Parameters:
+    z (jnp.array): The redshift.
+    H0 (jnp.array): The Hubble constant in km/s/Mpc.
+    Om_m (jnp.array): The matter density parameter.
+    
+    Returns:
+    jnp.array: The comoving distance in Mpc.
+    '''
     return dC(z, H0, Om_m)
 
-
 def luminosity_distance(z, H0, Om_m):
+    ''' Computes the luminosity distance for a given redshift z, H0 and Om_m.
+    
+    Parameters:
+    z (jnp.array): The redshift.
+    H0 (jnp.array): The Hubble constant in km/s/Mpc.
+    Om_m (jnp.array): The matter density parameter.
+    
+    Returns:
+    jnp.array: The luminosity distance in Mpc.
+    '''
     return (1+z)*dM(z, H0, Om_m)
 
-
 def angular_diameter_distance(z, H0, Om_m):
+    ''' Computes the angular diameter distance for a given redshift z, H0 and Om_m.
+    
+    Parameters:
+    z (jnp.array): The redshift.
+    H0 (jnp.array): The Hubble constant in km/s/Mpc.
+    Om_m (jnp.array): The matter density parameter.
+    
+    Returns:
+    jnp.array: The angular diameter distance in Mpc.
+    '''
     return dM(z,H0,Om_m)/(1+z)
 
 def angular_diameter_distance_z12(z1, z2, H0, Om_m):
+    ''' Computes the angular diameter distance between two redshifts for a given H0 and Om_m.
+    
+    Parameters:
+    z1 (jnp.array): The first redshift.
+    z2 (jnp.array): The second redshift.
+    H0 (jnp.array): The Hubble constant in km/s/Mpc.
+    Om_m (jnp.array): The matter density parameter.
+    
+    Returns:
+    jnp.array: The angular diameter distance in Mpc.
+    '''
     # H0 is in km/s/Mpc
     c = 299792.458 # km/s
     dH = c/H0 # Mpc
