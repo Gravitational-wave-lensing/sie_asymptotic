@@ -79,17 +79,60 @@ def H0_from_dL_Tstar(dL=dL_example*jnp.ones(2), T_star=T_star_example*jnp.ones(2
     H0_Tstar = H0_from_Tstar_zs_zl_sigma_v(T_star, zs, zl, sigma_v, Om, Ol) # Get H0 from T_star posterior
     return H0_dL, H0_Tstar
 
+# Compute the H0 from (dL, T_*) posteriors:
+def H0_from_dL_Tstar_without_zs(dL=dL_example*jnp.ones(2), T_star=T_star_example*jnp.ones(2), sigma_v=sigma_v_example*jnp.ones(2), zl=zl_example*jnp.ones(2), Om=Om_example*jnp.ones(2), Ol=Ol_example*jnp.ones(2)):
+    ''' Convert the dL and T_star posteriors to H0 posteriors.
+    
+    Parameters:
+    dL (jnp.array): The luminosity distance.
+    T_star (jnp.array): The Einstein radius crossing time.
+    sigma_v (jnp.array): The velocity dispersion.
+    zl (jnp.array): The lens redshift.
+    Om (jnp.array): The matter density.
+    Ol (jnp.array): The dark energy density.
+    
+    Returns:
+    jnp.array: The H0 posteriors.
+    '''
+    # Convert the dL and T_star posteriors to H0 posteriors:
+    zs_array = jnp.linspace(0.1, 10, 100)
+    H0 = jnp.zeros(len(dL))
+    zs = jnp.zeros(len(dL))
+    for i in range(len(dL)):
+        H0_dL_array = H0_from_dL_zs(dL[i], zs_array, Om[i], Ol[i]) # Get H0 from dL posterior
+        H0_Tstar_array = H0_from_Tstar_zs_zl_sigma_v(T_star[i], zs_array, zl[i], sigma_v[i], Om[i], Ol[i])
+        # Take the best-matching value of H0
+        print("dL",H0_dL_array)
+        print("Tstar", H0_Tstar_array)
+        idx = jnp.argmin(( H0_dL_array - H0_Tstar_array)**2)
+        H0_best, zs_best = H0_dL_array[idx], zs_array[idx]
+        H0 = H0.at[i].set(float(H0_best))
+        zs = zs.at[i].set(float(zs_best))
+        print("H0_best",H0_best)
+        print("zs_best",zs_best)
+    return H0, zs
+
 # If the user runs as main, test the parameter mapping
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import time
-    # Test the parameter mapping
-    H0_dL, H0_Tstar = H0_from_dL_Tstar()
-    plt.plot(H0_dL, H0_Tstar, 'o')
-    plt.xlabel(r'$H_0$ from $d_L$')
-    plt.ylabel(r'$H_0$ from $T_*$')
+    # # Test the parameter mapping
+    # H0_dL, H0_Tstar = H0_from_dL_Tstar()
+    # plt.plot(H0_dL, H0_Tstar, 'o')
+    # plt.xlabel(r'$H_0$ from $d_L$')
+    # plt.ylabel(r'$H_0$ from $T_*$')
+    # plt.show()
+    # print('H0_dL:', H0_dL)
+    # print('H0_Tstar:', H0_Tstar)
+    # print('H0_dL - H0_Tstar:', H0_dL - H0_Tstar)
+    # print('H0_dL / H0_Tstar:', H0_dL / H0_Tstar)
+    # Now test the parameter mapping without zs
+    H0, zs = H0_from_dL_Tstar_without_zs()
+    plt.plot(zs, H0, 'o')
+    plt.xlabel(r'$z_s$')
+    plt.ylabel(r'$H_0$')
     plt.show()
-    print('H0_dL:', H0_dL)
-    print('H0_Tstar:', H0_Tstar)
-    print('H0_dL - H0_Tstar:', H0_dL - H0_Tstar)
-    print('H0_dL / H0_Tstar:', H0_dL / H0_Tstar)
+    print('H0:', H0)
+    print('zs:', zs)
+    
+    
